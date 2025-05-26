@@ -7,7 +7,6 @@ from openai import OpenAI, OpenAIError
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 
-# Load survey format
 FORMAT_PATH = os.getenv('FORMAT_JSON_PATH', 'format.json')
 try:
     with open(FORMAT_PATH, 'r', encoding='utf-8') as f:
@@ -15,23 +14,16 @@ try:
 except (OSError, json.JSONDecodeError) as exc:
     raise RuntimeError(f"Failed to load survey format from {FORMAT_PATH}") from exc
 
-# Initialize OpenAI client
+
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY') or abort(500, description="OpenAI API key not configured")
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 
 def sanitize_json(text: str) -> str:
-    """
-    Ensure valid JSON by replacing single quotes in content fields.
-    """
-    # Replace problematic apostrophes not part of JSON syntax
     return text.replace("'", '"')
 
 
 async def generate_survey(prompt: str, system_prompt: str) -> Dict:
-    """
-    Calls OpenAI to generate survey JSON based on user prompt.
-    """
     try:
         res = await client.chat.completions.create(
             model='gpt-3.5-turbo',
@@ -44,7 +36,6 @@ async def generate_survey(prompt: str, system_prompt: str) -> Dict:
         abort(502, description=f"AI service error: {exc}")
 
     content = res.choices[0].message.content
-    # Sanitize and parse JSON
     sanitized = sanitize_json(content)
     try:
         return json.loads(sanitized)
@@ -54,13 +45,11 @@ async def generate_survey(prompt: str, system_prompt: str) -> Dict:
 
 @app.route('/', methods=['GET'])
 def index():
-    """Render the homepage with prompt input."""
     return render_template('index.html')
 
 
 @app.route('/submit', methods=['POST'])
 async def submit():
-    """Generate new survey JSON based on user prompt."""
     prompt = request.form.get('prompt') or abort(400, description="Missing prompt")
     system_prompt = (
         'You are an assistant that takes a user description of a survey and outputs valid JSON '
