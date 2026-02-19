@@ -62,7 +62,6 @@ async def submit():
 
 @app.route('/update', methods=['POST'])
 async def update():
-    """Modify existing survey JSON according to user instructions."""
     current_json = request.form.get('json') or abort(400, description="Missing JSON payload")
     prompt = request.form.get('prompt') or abort(400, description="Missing prompt")
 
